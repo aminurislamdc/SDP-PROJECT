@@ -1,5 +1,6 @@
 #include <bits/stdc++.h>
 #include <ctime>
+#include <iomanip>
 using namespace std;
 
 // Category names
@@ -82,8 +83,27 @@ bool ownerLogin() {
     cout << "Password: ";
     cin >> password;
 
-    // Hardcoded owner credentials
-    if (username == "owner" && password == "123") {
+    // Read owner credentials from admin.txt file
+    ifstream file("admin.txt");
+    if (!file.is_open()) {
+        cout << "Error: Admin credentials file not found!\n";
+        cout << "Please create 'admin.txt' file in the same directory.\n";
+        return false;
+    }
+
+    string fileUsername, filePassword;
+    bool found = false;
+
+    // LOOP: Check every line in the file
+    while (file >> fileUsername >> filePassword) {
+        if (username == fileUsername && password == filePassword) {
+            found = true;
+            break; // Stop searching if match is found
+        }
+    }
+    file.close();
+
+    if (found) {
         cout << "Owner login successful!\n";
         return true;
     } else {
@@ -109,13 +129,20 @@ bool salesmanLogin(Salesman &loggedSalesman) {
 
     Salesman salesman;
     bool success = false;
+    string line;
 
-    while (file >> salesman.id >> salesman.username >> salesman.password
-                >> salesman.name >> salesman.mobile >> salesman.email) {
-        if (salesman.username == username && salesman.password == password) {
-            loggedSalesman = salesman;
-            success = true;
-            break;
+    // Read line by line to prevent one bad line from stopping the loop
+    while (getline(file, line)) {
+        stringstream ss(line);
+        // Try to read the standard format
+        if (ss >> salesman.id >> salesman.username >> salesman.password >> salesman.name >> salesman.mobile >> salesman.email) {
+
+            // Check credentials
+            if (salesman.username == username && salesman.password == password) {
+                loggedSalesman = salesman;
+                success = true;
+                break;
+            }
         }
     }
     file.close();
@@ -196,6 +223,10 @@ void customerRegistration() {
 
     // Save to customers file
     ofstream file("customers.txt", ios::app);
+    if (!file.is_open()) {
+        cout << "Error creating customer account!\n";
+        return;
+    }
     file << newCustomer.name << "," << newCustomer.username << ","
          << newCustomer.password << "," << newCustomer.phone << endl;
     file.close();
@@ -244,6 +275,10 @@ void addSalesman() {
     cin >> newSalesman.password;
 
     ofstream file("salesmen.txt", ios::app);
+    if (!file.is_open()) {
+        cout << "Error opening salesmen file!\n";
+        return;
+    }
     file << newSalesman.id << " " << newSalesman.username << " " << newSalesman.password
          << " " << newSalesman.name << " " << newSalesman.mobile << " " << newSalesman.email << endl;
     file.close();
@@ -389,8 +424,9 @@ void salesmanMenu(Salesman &salesman) {
         cout << "2. View Products by Category\n";
         cout << "3. View All Products\n";
         cout << "4. Edit Product\n";
-        cout << "5. Checkout (Billing)\n";
-        cout << "6. Logout\n";
+        cout << "5. Delete Product\n";
+        cout << "6. Checkout (Billing)\n";
+        cout << "7. Logout\n";
         cout << "Enter Choice: ";
         cin >> choice;
 
@@ -399,11 +435,12 @@ void salesmanMenu(Salesman &salesman) {
             case 2: viewProductsByCategory(); break;
             case 3: viewAllProducts(); break;
             case 4: editProduct(); break;
-            case 5: salesmanBilling(); break;
-            case 6: cout << "Logging out...\n"; break;
+            case 5: deleteProduct(); break;
+            case 6: salesmanBilling(); break;
+            case 7: cout << "Logging out...\n"; break;
             default: cout << "Invalid Option!\n";
         }
-    } while (choice != 6);
+    } while (choice != 7);
 }
 
 //================= CUSTOMER MENU =================//
@@ -454,6 +491,10 @@ void loadProductsFromCategory(const string &category, vector<Product> &products)
 void saveProductToCategory(const Product &product) {
     string filename = getCategoryFilename(product.category);
     ofstream file(filename, ios::app);
+    if (!file.is_open()) {
+        cout << "Error opening file " << filename << " for writing.\n";
+        return;
+    }
     file << product.id << " " << product.name << " " << product.price << " " << product.quantity << endl;
     file.close();
 }
